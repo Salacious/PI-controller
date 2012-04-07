@@ -90,6 +90,7 @@ class timeresponse:
         self.lastind = 0
         self.selected,  = ax2.plot([por[0]], [tr[0]], 'o', ms=12, alpha=0.4,
                                       color='yellow', visible=False)
+        self.correspond, = ax1.plot([(kc[goodpoints])[0]],[(ti[goodpoints])[0]],'o',ms = 13,alpha = 0.5,color = 'yellow',visible= False)
        
     def onpick(self,event):
 
@@ -112,14 +113,14 @@ class timeresponse:
         pstn = self.lastind
         self.selected.set_visible(True)
         self.selected.set_data(por[pstn], tr[pstn])
+        self.correspond.set_visible(True)
+        self.correspond.set_data([(kc[goodpoints])[pstn]],[(ti[goodpoints])[pstn]])
         t = np.linspace(0,stop,200)
         yt = x[pstn]
         ax3.cla()
         ax3.plot(t,yt)
-        return True
-        ax1.plot([(kc[goodpoints])[pstn]],[(ti[goodpoints])[pstn]],'o',ms = 13,alpha = 0.5,color = 'yellow',visible= True)
         fig.canvas.draw()
-        
+        return True
 time = timeresponse()
 fig.canvas.mpl_connect('pick_event', time.onpick)
 plt.show()
