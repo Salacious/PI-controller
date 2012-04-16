@@ -9,7 +9,7 @@ dt = 0.2
 t = np.arange(0, tfinal, dt)
 entries = len(t)
 
-num = 1
+num = 10
 x = np.zeros((entries,num))
 k_c = np.zeros(num)
 t_i = np.zeros(num)
@@ -28,6 +28,7 @@ C = 2
 kp =0.125
 SP = 1
 a = 0
+
 # ZN settings
 kczn = 25.57
 tizn = 3.02
