@@ -9,7 +9,7 @@ dt = 0.2
 t = np.arange(0, tfinal, dt)
 entries = len(t)
 
-num = 10
+num = 1
 x = np.zeros((entries,num))
 k_c = np.zeros(num)
 t_i = np.zeros(num)
