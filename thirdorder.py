@@ -1,24 +1,25 @@
 # -*- coding: utf-8 -*-
 import numpy as np
-from numpy import linalg as LA
+from scipy import linalg
 import matplotlib.pyplot as plt
+from operator import itemgetter
+import pareto
+from overshoot import*
+from risetime import*
+from plotgraphs import*
+from response import* 
 
-
-tfinal = 100
+tfinal = 10
 dt = 0.2
 t = np.arange(0, tfinal, dt)
 entries = len(t)
-
 num = 10
 x = np.zeros((entries,num))
 k_c = np.zeros(num)
 t_i = np.zeros(num)
-
 por = np.zeros(num)
-print len(por)
 tr = np.zeros(num)
 aa = np.random.rand(num,2)
-
 k_c = 100*aa[:, 0]
 t_i = 10*aa[:, 1]
 # coefficients of the transfer function
@@ -28,77 +29,34 @@ C = 2
 kp =0.125
 SP = 1
 a = 0
+count = 0
 
-# ZN settings
-kczn = 25.57
-tizn = 3.02
 for k in range(0,num):
-    state= [0,0,0.5]
-    count = 0
-    de = 0
-    z= 0
-    y = 0
-    xt = 0.5
-    if k==num-1:
-        kc = kczn
-        ti = tizn    
-    else:    
-        kc =k_c[k]
-        ti = t_i[k]
-    # Stability Check: State space form
-    eq =[(ti/(kp*kc)*(C + (kp*kc))), (ti/(kp*kc))*B, (ti/(kp*kc))*A, (ti/(kp*kc))] 
-    Adot = [eq,[-1 ,0,0,0],[0,-1,0,0],[0, 0 ,-1,0]]
+    kc =k_c[k]
+    ti = t_i[k]
+    firstrow =[(ti/(kp*kc)*(C + (kp*kc))), (ti/(kp*kc))*B, (ti/(kp*kc))*A, (ti/(kp*kc))] 
+    Adot = [firstrow,[-1 ,0,0,0],[0,-1,0,0],[0, 0 ,-1,0]]
     cmat = -1*np.eye(4)
-    Amat = np.dot(LA.inv(Adot),cmat)
-    rootsA = np.array(LA.eigvals(Amat))
-    R = np.sign(rootsA.real)
-    I = np.sign(rootsA.imag)
-                
-    if ((R==-1).all()== True):
-        print rootsA
-    #Euler integration
-        for i in range (0,entries):
-                E = SP- state[2]
-                m =0.3+ kc*(E + de/ti)
-                dPdt = [(kp*m) -(C*state[2]) -( B*state[1])- (A*state[0]),state[0],state[1]]
-                state = state + np.multiply(dt,dPdt)
-                de = de + (E*dt)
-                x[i,k] = state[2]
-               
-        plt.plot(t,x)
+    Amat = np.dot((linalg.inv(Adot)),cmat)
+    rootsA = np.array(linalg.eigvals(Amat))
+    Bmat = np.dot(linalg.inv(Adot),[[1],[0] ,[0],[0]])
+    Xo = -1*np.dot(linalg.inv(Amat),Bmat*SP)
+    for i in range(0,entries):
+        At = linalg.expm2(Amat*t[i])
+        X = np.dot(((linalg.expm2(At))),Xo)
+        x[i,k] = X[0]
+        if X[0]> 50:
+            print 'the system is unstable, overshoot ratio and rise time undefined'
+            x[i,k] = None
+            break
         
-        por[k] = (np.max(np.absolute(x[:,k])))- SP
-        trvstore = np.zeros(entries)
-            
-#        for j in range (0,entries-1 ):
-#           if np.sign(SP - x[j,k])!=np.sign(SP - x[j+1 ,k]):
-#                
-#                if np.sign(SP - x[j+1 ,k])==0:
-#                    trv = t[j+1]
-#                else :
-#                    trv = np.interp(SP,[x[j,k],x[j+1,k]],[t[j],t[j+1]])
-#                trvstore[count] = trv
-#                count = count + 1
-#                trv = trvstore[0:count]    
-##        tr[k] = np.min(trv)
-#        a= a+1     
-        
-    else:
-        por[k] = None
-        tr[k] = None
-        x[:,k] = None
+        count = count + 1 
 
-        
-plt.show()
-
-
-
-
-
-
-
-
-
-
-
-
+kc = k_c
+ti = t_i
+x = np.transpose(x)
+por = overshoot(x,SP,num,entries)
+tr = risetime(x,SP,num,entries,t)
+x = np.transpose(x)
+fig,ax1,ax2,ax3,line2,goodpoints = plotgraphs(k_c,t_i,tr,por,x,num,tfinal)
+fig = response(ax1,ax2,ax3,x,por,tr,kc,ti,goodpoints,line2,tfinal,dt,fig)
