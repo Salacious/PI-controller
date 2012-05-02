@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 
-import numpy as np
+
 def risetime(x,SP,num,entries,t):
     import numpy as np
-    tr = np.zeros(num) 
+    tr = np.zeros(num)
     for j in range(0,num):
-        if (x[j][:] == None):
-            tr[j] = None   
+        trv = 0
+        if (np.isnan(x[j][:])).all()== True:
+            tr[j] = None  
         else:
             count = 0
             trvstore = np.zeros(entries)
@@ -19,8 +20,8 @@ def risetime(x,SP,num,entries,t):
                     trvstore[count] = trv
                     count = count + 1
                     trv = trvstore[0:count]   
-            tr[j] = np.min(trv)
-            
+                tr[j] = np.min(trv)
+    print tr     
     return tr
 
 
