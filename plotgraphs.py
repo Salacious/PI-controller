@@ -1,64 +1,74 @@
 # -*- coding: utf-8 -*-
 # accept x matrix(num,entries) where entries : values from one set of tuning consts
 
-
-def plotgraphs(kc,ti,x,num,entries,t,tfinal,dt,SP):
+def plotgraphs(kc,ti,x,num,entries,t,tfinal,dt,SP,kcst,tist):
     import numpy as np
     import matplotlib.pyplot as plt
     from operator import itemgetter
     import pareto
-
 # calulates the overshoot ratio
-    por = np.zeros(num)
+    def overshoot(x,num,SP,entries,t):
+        tpr = np.zeros(num)
+        por = np.zeros(num)
+        for u in range(0,num):
+            if (x[:][u]== None):
+                por[u]= None
+                tpr[u] = None
+            else:
+                por[u] = ((np.max(x[:][u]))- SP)/SP
+                for g in range(0,entries):
+                    if x[u][g] ==np.max(x[:][u]):
+                        tpr[u] = t[g]
+                       
+                    if por[u] < 0:
+                        por[u] = np.NINF
+                        tpr[u] = np.NINF
+        return {'por':por ,'tpr':tpr}
+    por2 = overshoot(x,num,SP,entries,t)
+    por = por2['por']
+    tpr = por2['tpr']
+    print por
+ # calculates the risetime
+    def risetime(x,num,entries,SP,t): 
+        tr = np.zeros(num)
+        for j in range(0,num):
+            if (np.isnan(x[j][:])).all()== True:
+                tr[j] = None 
+            else:
+                for k in range(0, entries-1):    
+                    if np.sign(SP - x[j][k])!=np.sign(SP - x[j][k+1]): 
+                        if np.sign(SP - x[j][k+1])==0:                 
+                            tr[j] = t[k+1]
+                        else :
+                            tr[j] = np.interp(SP,[x[j][k],x[j][k+1]],[t[k],t[k+1]])
+                        break
+        return tr
+    tr= risetime(x,num,entries,SP,t)
+    SSoffset = ~np.isneginf(por)
+    UNSTABLE =~np.isnan(por)           
     
-    for u in range(0,num):
-        if (x[:][u]== None):
-            por[u]= None
-        else:
-            por[u] = ((np.max(np.absolute(x[:][u])))- SP)/SP
-# calculates the risetime
-    tr = np.zeros(num)
-    for j in range(0,num):
-        trv = 0
-        if (np.isnan(x[j][:])).all()== True:
-            tr[j] = None  
-        else:
-            count = 0
-            trvstore = np.zeros(entries)
-            for k in range (0,entries-1 ):
-                if np.sign(SP - x[j][k])!=np.sign(SP - x[j][k+1]):
-                    if np.sign(SP - x[j][k+1])==0:
-                        trv = t[k+1]
-                    else :
-                        trv = np.interp(SP,[x[j][k],x[j][k+1]],[t[k],t[k+1]])
-                    trvstore[count] = trv
-                    count = count + 1
-                    trv = trvstore[0:count]   
-                tr[j] = np.min(trv)   
-   
+
 # plots the graphs
-    
-    goodpoints = ~(np.isnan(tr) | np.isnan(por))
+    goodpoints = ~(np.isnan(tr)| np.isnan(por)|np.isneginf(por))
     idx = np.arange(0,num)
     tr = tr[goodpoints]
     por = por[goodpoints]
+    tpr = tpr[goodpoints]
     idx = idx[goodpoints]
     x = x[goodpoints]
     zns = len(por)
-    print zns
     p = pareto.domset([itemgetter(1), itemgetter(2)], zip(idx, por, tr))
     front = p.data
     idx, xd, yd = map(np.array, zip(*front))
-    print por[zns-1]
-    print tr[zns-1]
     sortidx = np.argsort(xd)
     xd = xd[sortidx]
     yd = yd[sortidx]  
     fig = plt.figure()
+    
     ax1 = fig.add_subplot(2,2,1)
-    line = ax1.plot(kc[~goodpoints], ti[~goodpoints], 'y.',
-    	 kc[idx], ti[idx], 'ro',kc[num-1],ti[num-1],'ks')
-    line1, = ax1.plot(kc[goodpoints], ti[goodpoints], 'b.')
+    line = ax1.plot(kc[~UNSTABLE],ti[~UNSTABLE], 'y.',kcst,tist,'k-',
+    	 kc[idx], ti[idx], 'ro',kc[num-1],ti[num-1],'ks',kc[~SSoffset],ti[~SSoffset],'k.')
+    line1, = ax1.plot(kc[goodpoints], ti[goodpoints], 'b.',picker = 5,)
     plt.xlabel(r'$K_C$')
     plt.ylabel(r'$\tau_I$')
     ax2= fig.add_subplot(2,2,2)
@@ -71,9 +81,8 @@ def plotgraphs(kc,ti,x,num,entries,t,tfinal,dt,SP):
     ax3.text(0.02,0.5,'Click on the overshoot vs risetime plot to obtain the time response',fontsize = 13,color = 'red')
     plt.ylabel('output')
     plt.xlabel('time')
-    plt.axis([0,tfinal, 0,2])
-        
-# graphs interaction 
+    plt.axis([0,tfinal, 0,2])    
+# graphical interaction 
     class timeresponse:
         def __init__(self):
             self.lastind = 0
@@ -84,7 +93,6 @@ def plotgraphs(kc,ti,x,num,entries,t,tfinal,dt,SP):
         def onpick(self,event):
     
             if event.artist!=line2: return True
-        
             NW = len(event.ind)
             if not NW: return True
         
@@ -106,7 +114,9 @@ def plotgraphs(kc,ti,x,num,entries,t,tfinal,dt,SP):
             t = np.arange(0, tfinal, dt)
             yt = x[pstn]
             ax3.cla()
-            ax3.plot(t,yt)
+            ax3.plot(t,yt,tpr[pstn],((por[pstn] + 1)*SP),'ro')
+            ax3.axhline(y=SP,color = 'r')
+            ax3.axvline(x=tr[pstn],ymin=0,ymax = tr[pstn],color='k')
             fig.canvas.draw()
             return True
     time = timeresponse()
