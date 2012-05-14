@@ -86,24 +86,37 @@ def plotgraphs(kc,ti,x,num,entries,t,tfinal,dt,SP,kcst,tist):
     class timeresponse:
         def __init__(self):
             self.lastind = 0
+            self.l2 = 0
             self.selected,  = ax2.plot([por[0]], [tr[0]], 'o', ms=12, alpha=0.4,
                                           color='yellow', visible=False)
             self.correspond, = ax1.plot([(kc[goodpoints])[0]],[(ti[goodpoints])[0]],'o',ms = 13,alpha = 0.5,color = 'yellow',visible= False)
-           
+            self.selectedtc, = ax1.plot([(kc[goodpoints])[0]],[(ti[goodpoints])[0]],'o',ms = 13,alpha = 0.5,color = 'yellow',visible= False)
+            self.correspondtc,=ax2.plot([por[0]], [tr[0]], 'o', ms=12, alpha=0.4,
+                                          color='yellow', visible=False)
         def onpick(self,event):
     
-            if event.artist!=line2: return True
+            if event.artist!=line2:
+                self.a=1
+                return True
+            elif event.artist!=line1:
+                self.a =2
+                return True
             NW = len(event.ind)
             if not NW: return True
         
             x = event.mouseevent.xdata
             y = event.mouseevent.ydata
             radius = np.hypot(x-por[event.ind], y-tr[event.ind])
+            r2 = np.hypot(x-(kc[goodpoints])[event.ind], y-(ti[goodpoints])[event.ind])
             
             minind = radius.argmin()
+            m2 = r2.argmin()
+            p2 = event.ind[m2]
             pstn = event.ind[minind]
             self.lastind = pstn
+            self.l2 = p2
             self.update()
+       
         def update(self):
             if self.lastind is None: return
             pstn = self.lastind
@@ -117,6 +130,20 @@ def plotgraphs(kc,ti,x,num,entries,t,tfinal,dt,SP,kcst,tist):
             ax3.plot(t,yt,tpr[pstn],((por[pstn] + 1)*SP),'ro')
             ax3.axhline(y=SP,color = 'r')
             ax3.axvline(x=tr[pstn],ymin=0,ymax = tr[pstn],color='k')
+            fig.canvas.draw()
+            return True
+            if self.l2 is None: return
+            p2 = self.l2
+            self.selectedtc.set_visible(True)
+            self.selectedtc.set_data([(kc[goodpoints])[p2]],[(ti[goodpoints])[p2]])
+            self.correspondtc.set_visible(True)
+            self.correspondtc.set_data(por[p2], tr[p2])
+            t = np.arange(0, tfinal, dt)
+            yt = x[p2]
+            ax3.cla()
+            ax3.plot(t,yt,tpr[p2],((por[p2] + 1)*SP),'ro')
+            ax3.axhline(y=SP,color = 'r')
+            ax3.axvline(x=tr[p2],ymin=0,ymax = tr[p2],color='k')
             fig.canvas.draw()
             return True
     time = timeresponse()
