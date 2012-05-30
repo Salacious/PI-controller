@@ -37,16 +37,15 @@ def plotgraphs(kc,ti,x,num,entries,t,tfinal,dt,SP,kcst,tist):
             else:
                 for k in range(0, entries-1):    
                     if np.sign(SP - x[j][k])!=np.sign(SP - x[j][k+1]): 
-                        if np.sign(SP - x[j][k+1])==0:                 
-                            tr[j] = t[k+1]
+                        if np.sign(SP - x[j][k])==0:                 
+                            tr[j] = t[k]
                         else :
                             tr[j] = np.interp(SP,[x[j][k],x[j][k+1]],[t[k],t[k+1]])
                         break
         return tr
     tr= risetime(x,num,entries,SP,t)
     SSoffset = ~np.isneginf(por)
-    UNSTABLE =~np.isnan(por) 
-    print UNSTABLE          
+    UNSTABLE =~np.isnan(por)           
     
 
 # plots the graphs
@@ -58,7 +57,6 @@ def plotgraphs(kc,ti,x,num,entries,t,tfinal,dt,SP,kcst,tist):
     idx = idx[goodpoints]
     x = x[goodpoints]
     zns = len(por)
-    print len(kc[goodpoints])
     p = pareto.domset([itemgetter(1), itemgetter(2)], zip(idx, por, tr))
     front = p.data
     idx, xd, yd = map(np.array, zip(*front))
@@ -66,28 +64,26 @@ def plotgraphs(kc,ti,x,num,entries,t,tfinal,dt,SP,kcst,tist):
     xd = xd[sortidx]
     yd = yd[sortidx]  
     fig = plt.figure()
+    fig.set_facecolor('white')
     
     ax1 = fig.add_subplot(2,2,1)
-    if len(kc[goodpoints])!=len(kc):
-        line_a = ax1.plot(kc[~UNSTABLE],ti[~UNSTABLE], 'y.')
-        line_c=ax1.plot(kc[~SSoffset],ti[~SSoffset],'k.')
-    line_b = ax1.plot(kcst,tist,'k-',kc[idx], ti[idx], 'ro',kc[num-1],ti[num-1],'ks')
-  
-        
+    line = ax1.plot(kc[~UNSTABLE],ti[~UNSTABLE], 'y.',kcst,tist,'k-',
+    	 kc[idx], ti[idx], 'ro',kc[num-1],ti[num-1],'ks',kc[~SSoffset],ti[~SSoffset],'k.')
     line1, = ax1.plot(kc[goodpoints], ti[goodpoints], 'b.',picker = 5,)
-    plt.xlabel(r'$K_C$')
-    plt.ylabel(r'$\tau_I$')
+    plt.xlabel(r'$K_C$',fontsize = 12)
+    plt.ylabel(r'$\tau_I$',fontsize = 12)
     ax2= fig.add_subplot(2,2,2)
     line2, =ax2.plot(por, tr, 'o',picker = 5,)
     line22 = ax2.plot(por[zns-1],tr[zns-1],'ks',xd, yd, 'ro-')
     plt.axis([-0.2,1, 0,40])
-    plt.ylabel('risetime')
-    plt.xlabel('overshoot')
+    plt.ylabel('risetime (s)',fontsize = 12)
+    plt.xlabel('overshoot ratio',fontsize = 12)
     ax3 = fig.add_subplot(2,1,2)
+    plt.ylabel('x',fontsize = 12)
+    plt.xlabel('time (s)',fontsize = 12)
+    plt.axis([0,tfinal, 0,2])
     ax3.text(0.02,0.5,'Click on the overshoot vs risetime plot to obtain the time response',fontsize = 13,color = 'red')
-    plt.ylabel('output')
-    plt.xlabel('time')
-    plt.axis([0,tfinal, 0,2])    
+        
 # graphical interaction 
     class timeresponse:
         def __init__(self):
@@ -98,7 +94,6 @@ def plotgraphs(kc,ti,x,num,entries,t,tfinal,dt,SP,kcst,tist):
             self.correspond, = ax1.plot([(kc[goodpoints])[0]],[(ti[goodpoints])[0]],'o',ms = 13,alpha = 0.5,color = 'yellow',visible= False)
             
         def onpick(self,event):
-    
             if event.artist!=line2:
                 self.correspond.set_visible(False)
                 self.selected.set_visible(False)
@@ -126,6 +121,9 @@ def plotgraphs(kc,ti,x,num,entries,t,tfinal,dt,SP,kcst,tist):
             t = np.arange(0, tfinal, dt)
             yt = x[pstn]
             ax3.cla()
+            plt.ylabel('x',fontsize = 12)
+            plt.xlabel('time (s)',fontsize = 12)
+            plt.axis([0,tfinal, 0,2])
             ax3.plot(t,yt,tpr[pstn],((por[pstn] + 1)*SP),'ro')
             ax3.axhline(y=SP,color = 'r')
             ax3.axvline(x=tr[pstn],ymin=0,ymax = tr[pstn],color='k')
@@ -139,9 +137,9 @@ def plotgraphs(kc,ti,x,num,entries,t,tfinal,dt,SP,kcst,tist):
     class kctiinteract(timeresponse):
           def __init__(self):
               self.l2 = 0
-              self.selectedtc, = ax1.plot([(kc[goodpoints])[0]],[(ti[goodpoints])[0]],'o',ms = 13,alpha = 0.5,color = 'pink',visible= False)
+              self.selectedtc, = ax1.plot([(kc[goodpoints])[0]],[(ti[goodpoints])[0]],'o',ms = 13,alpha = 0.5,color = 'orange',visible= False)
               self.correspondtc,=ax2.plot([por[0]], [tr[0]], 'o', ms=12, alpha=0.4,
-                                          color='pink', visible=False)
+                                          color='orange', visible=False)
           def onpick(self,event):
               if event.artist!=line1:
                   self.correspondtc.set_visible(False)
@@ -166,8 +164,15 @@ def plotgraphs(kc,ti,x,num,entries,t,tfinal,dt,SP,kcst,tist):
             t = np.arange(0, tfinal, dt)
             yt = x[p2]
             ax3.cla()
+            plt.ylabel('x')
+            plt.xlabel('time (s)')
+            plt.axis([0,tfinal, 0,2])
             ax3.plot(t,yt,tpr[p2],((por[p2] + 1)*SP),'ro')
             ax3.axhline(y=SP,color = 'r')
+            rr = np.linspace(0,SP)
+            yy = [tr[p2]]*len(rr)
+            ax3.plot(yy,rr,'k-')
+            
          
             fig.canvas.draw()
             return True
