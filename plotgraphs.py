@@ -27,7 +27,7 @@ def plotgraphs(kc,ti,x,num,entries,t,tfinal,dt,SP,kcst,tist):
     por2 = overshoot(x,num,SP,entries,t)
     por = por2['por']
     tpr = por2['tpr']
-    print por
+    
  # calculates the risetime
     def risetime(x,num,entries,SP,t): 
         tr = np.zeros(num)
@@ -65,25 +65,41 @@ def plotgraphs(kc,ti,x,num,entries,t,tfinal,dt,SP,kcst,tist):
     yd = yd[sortidx]  
     fig = plt.figure()
     fig.set_facecolor('white')
+    font = {'family' : 'cambria', 
+        'weight' : 'normal', 
+        'size'   : 14} 
+ 
+    plt.matplotlib.rc('font', **font)
     
     ax1 = fig.add_subplot(2,2,1)
-    line = ax1.plot(kc[~UNSTABLE],ti[~UNSTABLE], 'y.',kcst,tist,'k-',
-    	 kc[idx], ti[idx], 'ro',kc[num-1],ti[num-1],'ks',kc[~SSoffset],ti[~SSoffset],'k.')
-    line1, = ax1.plot(kc[goodpoints], ti[goodpoints], 'b.',picker = 5,)
-    plt.xlabel(r'$K_C$',fontsize = 12)
-    plt.ylabel(r'$\tau_I$',fontsize = 12)
+    linea = ax1.plot(kc[~UNSTABLE],ti[~UNSTABLE], 'w.')
+    lineb = ax1.plot(kcst,tist,'k-')
+    
+    linee = ax1.plot(kc[~SSoffset],ti[~SSoffset],'g+')
+    line1, = ax1.plot(kc[goodpoints], ti[goodpoints], 'wo',picker = 5,)
+    linec = ax1.plot(kc[idx], ti[idx],'ro')
+    lined = ax1.plot(kc[num-2],ti[num-2],'ks') # Ziegler Nichos settings
+    lineco = ax1.plot(kc[num-1],ti[num-1],'gs') # Cohen coon settings
+    linetl = ax1.plot(kc[num-3],ti[num-3],'ms') # tyreas n Luyben settings
+    plt.xlabel(r'$K_C$',fontsize = 'large')
+    plt.ylabel(r'$\tau_I$',fontsize = 'large')
     ax2= fig.add_subplot(2,2,2)
-    line2, =ax2.plot(por, tr, 'o',picker = 5,)
-    line22 = ax2.plot(por[zns-1],tr[zns-1],'ks',xd, yd, 'ro-')
+    line2, =ax2.plot(por, tr, 'wo',picker = 5,)
+    
+    line222=ax2.plot(xd, yd, 'ro-')
+    line22 = ax2.plot(por[zns-2],tr[zns-2],'ks')
+    linecc2 = ax2.plot(por[zns-1],tr[zns-1],'gs') # cohen coon settings
+    plt.setp((linea,lineb,linee,line1),linewidth = 2.0)
+    plt.figlegend((linea,lineb,linec,lined,lineco,linetl,linee,line1),('Unstable','Stabilty limit','Pareto points','Z&N settings','Cohen Coon','Tyreus & Luyben','S/S offset','Stable'),'upper right',borderaxespad=0.)
     plt.axis([-0.2,1, 0,40])
-    plt.ylabel('risetime (s)',fontsize = 12)
-    plt.xlabel('overshoot ratio',fontsize = 12)
+    plt.ylabel('risetime (s)',fontsize = 'large')
+    plt.xlabel('overshoot ratio',fontsize = 'large')
     ax3 = fig.add_subplot(2,1,2)
     plt.ylabel('x',fontsize = 12)
     plt.xlabel('time (s)',fontsize = 12)
     plt.axis([0,tfinal, 0,2])
     ax3.text(0.02,0.5,'Click on the overshoot vs risetime plot to obtain the time response',fontsize = 13,color = 'red')
-        
+     
 # graphical interaction 
     class timeresponse:
         def __init__(self):
@@ -125,8 +141,10 @@ def plotgraphs(kc,ti,x,num,entries,t,tfinal,dt,SP,kcst,tist):
             plt.xlabel('time (s)',fontsize = 12)
             plt.axis([0,tfinal, 0,2])
             ax3.plot(t,yt,tpr[pstn],((por[pstn] + 1)*SP),'ro')
-            ax3.axhline(y=SP,color = 'r')
-            ax3.axvline(x=tr[pstn],ymin=0,ymax = tr[pstn],color='k')
+            ax3.axhline(y=SP,color ='black',linestyle ='--')
+            rr = np.linspace(0,SP)
+            yy = [tr[pstn]]*len(rr)
+            ax3.plot(yy,rr,'k--')
             fig.canvas.draw()
             return True
             
@@ -167,12 +185,11 @@ def plotgraphs(kc,ti,x,num,entries,t,tfinal,dt,SP,kcst,tist):
             plt.ylabel('x')
             plt.xlabel('time (s)')
             plt.axis([0,tfinal, 0,2])
-            ax3.plot(t,yt,tpr[p2],((por[p2] + 1)*SP),'ro')
-            ax3.axhline(y=SP,color = 'r')
+            ax3.plot(t,yt,tpr[p2],((por[p2] + 1)*SP),'ro',linewidth = 2.0)
+            ax3.axhline(y=SP,color ='black',linestyle ='--')
             rr = np.linspace(0,SP)
             yy = [tr[p2]]*len(rr)
-            ax3.plot(yy,rr,'k-')
-            
+            ax3.plot(yy,rr,'k--')
          
             fig.canvas.draw()
             return True
