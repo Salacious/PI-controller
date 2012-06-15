@@ -5,7 +5,9 @@ from kcfunction import *
 from pymopsocd import *
 import simulate
 
-kczn, tizn  =ZN(simulate.A, simulate.B, simulate.C, simulate.kp)
+znset =ZN(simulate.A, simulate.B, simulate.C, simulate.kp)
+kczn = znset[0]
+tizn = znset[1]
 
 class problemcontrol(problem):
     def __init__(self):
@@ -23,15 +25,24 @@ class problemcontrol(problem):
         return cevaluation(position, array([v[0], v[2]]))
 
 prob = problemcontrol()
-theswarm = swarm(prob, Nparticles=100, 
-                         archivesize=70, 
-                         maxgen=200,
+theswarm = swarm(prob, Nparticles=50, 
+                         archivesize=25, 
+                         maxgen=50,
                          pMut=0.1,
                          rememberevals=True,
                          printinterval=1)
 theswarm.run()
 
 plt.figure()
-plt.plot(*zip(*[e.value for e in theswarm.allevals]), color='blue', marker='.', linestyle='')
-plt.plot(*zip(*sorted([list(e.value) for e in theswarm.archive.list if not isnan(e.value).all()])), color='red')
+font = {'family' : 'cambria', 
+        'weight' : 'normal', 
+        'size'   : 14} 
+ 
+plt.matplotlib.rc('font', **font)
+plt.figure().set_facecolor('white')
+plt.plot(*zip(*[e.value for e in theswarm.allevals]), color='white', marker='o', linestyle='')
+plt.plot(*zip(*sorted([list(e.value) for e in theswarm.archive.list if not isnan(e.value).all()])), color='red',linewidth = 2.5)
+plt.legend(["swarm particles", "Pareto Front"])
+plt.xlabel('overshoot' ,fontsize='large')
+plt.ylabel('rise time(s)', fontsize = 'large')
 plt.show()
